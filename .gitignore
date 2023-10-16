@@ -150,3 +150,5 @@ coverage/
 !.yarn/releases
 !.yarn/sdks
 !.yarn/versions
+
+jest-html-reporters-attach/
