@@ -14,7 +14,7 @@
     },
     "scripts": {
         "build": "tsc",
-        "prepack": "npm run build",
+        "prepack": "yarn build",
         "lint": "eslint --ext .ts,.js .",
         "lint:fix": "eslint --fix --ext .ts,.js .",
         "test": "jest",

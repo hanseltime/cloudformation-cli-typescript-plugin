@@ -51,7 +51,8 @@ export interface Callable<R extends Array<any>, T> {
     (...args: R): T;
 }
 
-interface Integer extends bigint {
+// eslint-disable-next-line @typescript-eslint/ban-types
+interface Integer extends BigInt {
     /**
      * Defines the default JSON representation of
      * Integer (BigInt) to be a number.
