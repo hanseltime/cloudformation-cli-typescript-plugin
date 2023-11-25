@@ -572,7 +572,6 @@ export abstract class BaseResource<
                         await this.prepareCredentialsFilter(this.callerSession)
                     );
                 }
-                this.log('EVENT DATA\n', eventData);
                 progress = await this.invokeHandler(
                     this.callerSession,
                     request,
