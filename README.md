@@ -75,11 +75,22 @@ pip3 install \
 
 That ensures neither is accidentally installed from PyPI.
 
-For changes to the typescript library "@amazon-web-services-cloudformation/cloudformation-cli-typescript-lib" pack up the compiled javascript:
+For Developing the typescript library, please ensure that you are on node >=18 and that you have run:
 
 ```shell
-npm run build
-npm pack
+corepack enable
+
+# Check this to make sure it matches package.json.packageManager
+yarn --version
+```
+
+For local changes to the typescript library "@amazon-web-services-cloudformation/cloudformation-cli-typescript-lib" you can:
+
+```shell
+yarn build
+
+# In other package
+yarn add <path to this directory>
 ```
 
 You can then install this in a cfn resource project using:

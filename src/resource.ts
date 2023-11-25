@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import { boundMethod } from 'autobind-decorator';
 
-import { AwsTaskWorkerPool, ProgressEvent, SessionProxy } from './proxy';
+import { ProgressEvent, SessionProxy } from './proxy';
 import {
     BaseHandlerException,
     InternalFailure,
@@ -122,7 +122,6 @@ export abstract class BaseResource<
     constructor(
         public readonly typeName: string,
         public readonly modelTypeReference: Constructor<T>,
-        protected readonly workerPool?: AwsTaskWorkerPool,
         private handlers?: HandlerSignatures<T, TypeConfiguration>,
         public readonly typeConfigurationTypeReference?: Constructor<TypeConfiguration> & {
             deserialize: Function;
@@ -170,8 +169,7 @@ export abstract class BaseResource<
             this.providerMetricsPublisher = new MetricsPublisher(
                 this.providerSession,
                 this.platformLoggerProxy,
-                resourceType,
-                this.workerPool
+                resourceType
             );
             this.metricsPublisherProxy.addMetricsPublisher(
                 this.providerMetricsPublisher
@@ -187,8 +185,7 @@ export abstract class BaseResource<
                 logGroupName,
                 providerLogStreamName,
                 this.platformLoggerProxy,
-                this.metricsPublisherProxy,
-                this.workerPool
+                this.metricsPublisherProxy
             );
             this.s3LogHelper.refreshClient();
             const folderName = await this.s3LogHelper.prepareFolder();
@@ -199,8 +196,7 @@ export abstract class BaseResource<
                     logGroupName,
                     folderName,
                     this.platformLoggerProxy,
-                    this.metricsPublisherProxy,
-                    this.workerPool
+                    this.metricsPublisherProxy
                 );
                 this.loggerProxy.addLogPublisher(providerS3Logger);
                 providerS3Logger.refreshClient();
@@ -211,8 +207,7 @@ export abstract class BaseResource<
                     providerLogGroupName,
                     providerLogStreamName,
                     this.platformLoggerProxy,
-                    this.metricsPublisherProxy,
-                    this.workerPool
+                    this.metricsPublisherProxy
                 );
                 this.cloudWatchLogHelper.refreshClient();
                 const logStreamName = await this.cloudWatchLogHelper.prepareLogStream();
@@ -224,8 +219,7 @@ export abstract class BaseResource<
                     providerLogGroupName,
                     logStreamName,
                     this.platformLoggerProxy,
-                    this.metricsPublisherProxy,
-                    this.workerPool
+                    this.metricsPublisherProxy
                 );
                 this.loggerProxy.addLogPublisher(this.providerEventsLogger);
                 this.providerEventsLogger.refreshClient();
@@ -237,12 +231,14 @@ export abstract class BaseResource<
         }
     }
 
-    private prepareCredentialsFilter(session: SessionProxy): LogFilter {
+    private async prepareCredentialsFilter(session: SessionProxy): Promise<LogFilter> {
         const credentials = session?.configuration?.credentials;
         if (credentials) {
+            // Handle the credentials provider
+            const creds = await credentials();
             return {
                 applyFilter: (message: string): string => {
-                    for (const value of Object.values(credentials)) {
+                    for (const value of Object.values(creds)) {
                         message = replaceAll(message, value, '<REDACTED>');
                     }
                     return message;
@@ -254,20 +250,12 @@ export abstract class BaseResource<
 
     private async waitRunningProcesses() {
         this.log('Waiting for logger proxy processes to finish...');
-        if (this.workerPool) {
-            this.log(
-                `Prepare worker pool for shutdown.\tNumber of completed tasks: ${this.workerPool.completed}\tLength of time since instance was created: ${this.workerPool.duration} ms`
-            );
-        }
         await delay(1);
         if (this.loggerProxy) {
             await this.loggerProxy.waitCompletion();
         }
         await this.platformLoggerProxy.waitCompletion();
         this.log('Log delivery completed.');
-        if (this.workerPool) {
-            await this.workerPool.shutdown();
-        }
     }
 
     /*
@@ -325,9 +313,8 @@ export abstract class BaseResource<
         if (!this.handlers.has(action)) {
             throw new Error(`Unknown action ${actionName}`);
         }
-        const handleRequest: HandlerSignature<T, TypeConfiguration> = this.handlers.get(
-            action
-        );
+        const handleRequest: HandlerSignature<T, TypeConfiguration> =
+            this.handlers.get(action);
         // We will make the callback context and resource states readonly
         // to avoid modification at a later time
         deepFreeze(callbackContext);
@@ -379,7 +366,7 @@ export abstract class BaseResource<
             this.callerSession = SessionProxy.getSession(creds, event.region);
             action = event.action;
             callbackContext = event.callbackContext || {};
-        } catch (err) {
+        } catch (err: any) {
             this.log('Invalid request');
             throw new InternalFailure(`${err} (${err.name})`);
         }
@@ -417,7 +404,7 @@ export abstract class BaseResource<
                 action,
                 callbackContext
             );
-        } catch (err) {
+        } catch (err: any) {
             if (!err.stack) {
                 Error.captureStackTrace(err);
             }
@@ -458,7 +445,7 @@ export abstract class BaseResource<
             providerCredentials = event.requestData.providerCredentials;
             action = event.action;
             callbackContext = event.callbackContext || {};
-        } catch (err) {
+        } catch (err: any) {
             throw new InvalidRequest(`${err} (${err.name})`);
         }
         return [
@@ -485,7 +472,7 @@ export abstract class BaseResource<
                 region: request.region,
             });
             return unmodeled.toModeled<T>(this.modelTypeReference);
-        } catch (err) {
+        } catch (err: any) {
             this.log('Invalid request');
             throw new InvalidRequest(`${err} (${err.name})`);
         }
@@ -506,7 +493,7 @@ export abstract class BaseResource<
             return this.typeConfigurationTypeReference.deserialize(
                 request.requestData.typeConfiguration
             );
-        } catch (err) {
+        } catch (err: any) {
             this.log('Invalid Type Configuration');
             throw new InvalidTypeConfiguration(this.typeName, `${err} (${err.name}`);
         }
@@ -532,9 +519,8 @@ export abstract class BaseResource<
                     'Missing Model class to be used to deserialize JSON data.'
                 );
             }
-            const [credentials, action, callback, event] = BaseResource.parseRequest(
-                eventData
-            );
+            const [credentials, action, callback, event] =
+                BaseResource.parseRequest(eventData);
             bearerToken = event.bearerToken;
             const [callerCredentials, providerCredentials] = credentials;
             const request = this.castResourceRequest(event);
@@ -580,10 +566,10 @@ export abstract class BaseResource<
                         },
                     });
                     this.loggerProxy.addFilter(
-                        this.prepareCredentialsFilter(this.providerSession)
+                        await this.prepareCredentialsFilter(this.providerSession)
                     );
                     this.loggerProxy.addFilter(
-                        this.prepareCredentialsFilter(this.callerSession)
+                        await this.prepareCredentialsFilter(this.callerSession)
                     );
                 }
                 progress = await this.invokeHandler(
@@ -593,7 +579,7 @@ export abstract class BaseResource<
                     callback,
                     typeConfiguration
                 );
-            } catch (err) {
+            } catch (err: any) {
                 error = err;
             }
             const endTime = new Date(Date.now());
@@ -607,7 +593,7 @@ export abstract class BaseResource<
                 await this.publishExceptionMetric(action, error);
                 throw error;
             }
-        } catch (err) {
+        } catch (err: any) {
             if (!err.stack) {
                 Error.captureStackTrace(err);
             }
