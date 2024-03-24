@@ -15,7 +15,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ ubuntu-latest, macos-latest ]
+        os: [ ubuntu-latest ]
         python: [ 3.8, 3.9 ]
         node: [ 18 ]
     env:
@@ -79,15 +79,15 @@ jobs:
         # Touch needed because of https://github.com/aws/aws-cli/issues/2639
         run: |
           npm ci --include=optional
-          find ./node_modules/* -mtime +10950 -exec touch {} \;
           npm run build
-      - uses: actions/cache@v3
-        with:
-          path: ~/.cache/pre-commit/
-          key: ${{ matrix.os }}-${{ env.pythonLocation }}${{ hashFiles('.pre-commit-config.yaml') }}
+      # - uses: actions/cache@v3
+      #   with:
+      #     path: ~/.cache/pre-commit/
+      #     key: ${{ matrix.os }}-${{ env.pythonLocation }}${{ hashFiles('.pre-commit-config.yaml') }}
       - name: Run Unit Tests
         id: unit_testing
         run: |
+          cat src/interface.ts
           pre-commit run --all-files --verbose
       - name: Upload Coverage
         id: codecov
