@@ -141,3 +141,7 @@ node_modules/
 coverage/
 
 *.iml
+
+# jest html reporters
+jest_html_reporters.html
+jest-html-reporters-attach
