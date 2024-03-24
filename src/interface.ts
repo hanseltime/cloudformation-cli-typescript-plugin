@@ -51,7 +51,7 @@ export interface Callable<R extends Array<any>, T> {
     (...args: R): T;
 }
 
-interface Integer extends bigint {
+interface Integer extends BigInt {
     /**
      * Defines the default JSON representation of
      * Integer (BigInt) to be a number.
