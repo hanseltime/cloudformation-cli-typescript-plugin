@@ -125,6 +125,25 @@ pre-commit run --all-files
 pre-commit run pytest-local
 ```
 
+## Troubleshooting Tests
+
+When we run plugin tests, the pytest suite will create temporary folders and then initialize a project via the current plugin there.
+Additionally, it will make sure to build the typescript project in this repo and link it for testing.  This can lead to a few unexpected
+surprises in tests if you are not careful.
+
+### 1 Project is not buildable in typescript
+
+Always make sure that you can build the library via `npm run build` before running tests.  If not, build errors before any codegen_test.py
+tests actually run, are a good indicator that this is the case.
+
+### 2 Plugin generation fails during codegen_test.py
+
+Due to the nature of nested tooling when calling build methods (i.e. sam cli calls that call internal commands), you will want to run just
+the one test, open a new terminal in the temporary directory, and then try to run the logged commands that failed within the folder.
+
+If you are failing with non-descript SAM messages during the build phase.  It is most advisable to make sure to run the command that failed
+during SAM build but just within the folder (unless you are failing a docker build, in which case you will need to determine the correct triage).
+
 ## License
 -------
 

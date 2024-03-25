@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 
 import os
 import sys
-from subprocess import CalledProcessError, PIPE, run as subprocess_run  # nosec
+from subprocess import PIPE, CalledProcessError, run as subprocess_run  # nosec
 from unittest.mock import patch, sentinel
 from uuid import uuid4
 
@@ -34,6 +34,7 @@ subprocess_run(  # nosec
     shell=True,
     universal_newlines=True,
 )
+
 
 @pytest.fixture
 def plugin():
@@ -139,7 +140,9 @@ def project_both_true(tmp_path: str):
 
 def get_files_in_project(project: Project):
     return {
-        str(child.relative_to(project.root)): child for child in project.root.rglob("*") if "node_modules" not in str(child)
+        str(child.relative_to(project.root)): child
+        for child in project.root.rglob("*")
+        if "node_modules" not in str(child)
     }
 
 
