@@ -77,7 +77,7 @@ repos:
       - id: jest-local
         name: jest-local
         description: Run jest in the local environment
-        entry: npx jest --ci --verbose
+        entry: npx jest --ci --verbose --runInBand
         language: system
         # ignore all files, run on hard-coded modules instead
         pass_filenames: false

@@ -80,14 +80,22 @@ jobs:
         run: |
           npm ci --include=optional
           npm run build
-      # - uses: actions/cache@v3
-      #   with:
-      #     path: ~/.cache/pre-commit/
-      #     key: ${{ matrix.os }}-${{ env.pythonLocation }}${{ hashFiles('.pre-commit-config.yaml') }}
-      - name: Run Unit Tests
-        id: unit_testing
+      - id: eslint
+        name: Eslint
         run: |
-          pre-commit run --all-files --verbose
+          npm run lint
+      - id: pylint
+        name: Pylint
+        run: |
+          pylint "setup.py" "python/" "tests/"
+      - id: pytest
+        name: Pytest
+        run: |
+          pytest --cov=rpdk.typescript tests/
+      - id: jest_unit
+        name: Run Jest Unit Tests
+        run: |
+          npx jest --ci --verbose --runInBand
       - name: Upload Coverage
         id: codecov
         run: |
