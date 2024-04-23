@@ -11,7 +11,7 @@ import {
     ResourceHandlerRequest,
     SessionProxy,
 } from '{{lib_name}}';
-import { ResourceModel, TypeConfigurationModel } from './models';
+import { ResourceModel, TypeConfigurationModel } from './models.js';
 import { S3 } from '@aws-sdk/client-s3';
 
 interface CallbackContext extends Record<string, any> {}
