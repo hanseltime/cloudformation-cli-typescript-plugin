@@ -11,7 +11,8 @@ import {
     ResourceHandlerRequest,
     SessionProxy,
 } from '{{lib_name}}';
-import { ResourceModel, TypeConfigurationModel } from './models';
+import { ResourceModel, TypeConfigurationModel } from './models.js';
+import { S3 } from '@aws-sdk/client-s3';
 
 interface CallbackContext extends Record<string, any> {}
 
@@ -44,7 +45,7 @@ class Resource extends BaseResource<ResourceModel> {
         // Example:
         try {
             if (session instanceof SessionProxy) {
-                const client = session.client('S3');
+                const client = session.client(S3);
             }
             // Setting Status to success will signal to CloudFormation that the operation is complete
             progress.status = OperationStatus.Success;

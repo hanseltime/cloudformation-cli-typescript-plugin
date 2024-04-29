@@ -54,8 +54,36 @@ $ cfn submit --dry-run
 $ sam local invoke --event sam-tests/create.json TestEntrypoint
 ```
 
-Development
+## Development
 -----------
+
+### Recommended Setup:
+
+Local development tooling is included in the root level [Pipfile](./Pipfile)
+
+To use the correct tooling install a pipenv:
+
+```shell
+# Do once if you don't have pipenv
+pip install --user pipenv
+
+# Install dev and runtime tooling
+pipenv install --dev
+```
+
+If you would like to keep environment as the activated environment:
+
+```shell
+pipenv shell
+```
+
+If you would like to just run one of the tools installed by pipenv:
+
+```shell
+pipenv run <command>
+```
+
+### Local Developing
 
 For changes to the plugin, a Python virtual environment is recommended. Check out and install the plugin in editable mode:
 
@@ -97,7 +125,26 @@ pre-commit run --all-files
 pre-commit run pytest-local
 ```
 
-License
+## Troubleshooting Tests
+
+When we run plugin tests, the pytest suite will create temporary folders and then initialize a project via the current plugin there.
+Additionally, it will make sure to build the typescript project in this repo and link it for testing.  This can lead to a few unexpected
+surprises in tests if you are not careful.
+
+### 1 Project is not buildable in typescript
+
+Always make sure that you can build the library via `npm run build` before running tests.  If not, build errors before any codegen_test.py
+tests actually run, are a good indicator that this is the case.
+
+### 2 Plugin generation fails during codegen_test.py
+
+Due to the nature of nested tooling when calling build methods (i.e. sam cli calls that call internal commands), you will want to run just
+the one test, open a new terminal in the temporary directory, and then try to run the logged commands that failed within the folder.
+
+If you are failing with non-descript SAM messages during the build phase.  It is most advisable to make sure to run the command that failed
+during SAM build but just within the folder (unless you are failing a docker build, in which case you will need to determine the correct triage).
+
+## License
 -------
 
 This library is licensed under the Apache 2.0 License.
